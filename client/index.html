@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>🚀 BRU AI — Your General Assistant</title>
+<style>
+  :root{
+    --bg:#0a1628; --panel:#0f1d35; --muted:#a8b8d8; --accent:#10b981; --accent2:#059669;
+    --success:#22c55e; --danger:#ef4444; --warning:#f59e0b; --info:#3b82f6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:linear-gradient(180deg,#0a1628 0%,#1e293b 100%); color:#e2e8f0;
+    font-family:'Segoe UI', sans-serif; display:flex; flex-direction:column; min-height:100vh;
+  }
+ 
+  header{
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    padding:14px 28px; display:flex; justify-content:space-between; align-items:center;
+    box-shadow:0 4px 20px rgba(16,185,129,0.2); position:sticky; top:0; z-index:100;
+  }
+
+  .container{
+    max-width:1200px; width:100%; margin:0 auto; padding:20px; flex:1;
+    display:grid; grid-template-columns:250px 1fr; gap:20px;
+  }
+ 
+  .sidebar{
+    background:rgba(255,255,255,0.02); border:1px solid rgba(16,185,129,0.15);
+    padding:20px; border-radius:16px; height:fit-content;
+  }
+
+  .output-box{
+    background:#0a1628; border:1px solid rgba(16,185,129,0.2); padding:20px;
+    border-radius:12px; height:450px; overflow-y:auto; display:flex; flex-direction:column; gap:12px;
+  }
+
+  .message-bubble { padding: 12px 16px; border-radius: 12px; max-width: 90%; position: relative; }
+  .user-msg { align-self: flex-end; background: var(--info); color: white; }
+  .ai-msg { align-self: flex-start; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); }
+
+  .code-container {
+    background: #1e293b; border-radius: 8px; border: 1px solid #334155;
+    margin: 10px 0; overflow: hidden;
+  }
+  .code-header {
+    background: #334155; padding: 6px 12px; display: flex; justify-content: space-between;
+    align-items: center; font-size: 12px;
+  }
+  .copy-btn {
+    background: var(--accent); border: none; color: white; padding: 3px 8px;
+    border-radius: 4px; cursor: pointer;
+  }
+  pre { padding: 12px; overflow-x: auto; color: #34d399; font-family: monospace; margin:0; }
+
+  .text-input {
+    width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+    background: #0a1628; color: white; resize: none; margin-top: 10px;
+  }
+  .submit-btn {
+    width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: none;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    color: white; font-weight: 700; cursor: pointer;
+  }
+
+  .feedback {
+    position: absolute;
+    bottom: -20px;
+    right: 10px;
+    display: flex;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .thumb {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+  .thumb:hover { opacity: 1; }
+  .thumb-up { color: var(--success); }
+  .thumb-down { color: var(--danger); }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header><div class="logo">🚀 BRU AI</div></header>
+
+<div class="container">
+  <aside class="sidebar">
+    <h4 style="color:var(--accent)">General AI Assistant</h4>
+    <p style="font-size: 12px; opacity: 0.7">Powered by BRU Companies</p>
+    <p style="font-size: 12px; opacity: 0.7">Ask anything: questions, code, ideas, help, or fun chats!</p>
+    <p style="font-size: 12px; opacity: 0.7">AI remembers conversation history.</p>
+  </aside>
+
+  <main class="main-area">
+    <div class="output-box" id="output">
+      <div class="ai-msg message-bubble">
+        Welcome to BRU AI! 🚀<br>
+        I'm your general-purpose AI assistant made by BRU Companies.<br>
+        Ask me anything – coding help, advice, creative ideas, explanations, or just chat!<br>
+        Special thanks to INEZA AIME BRUNO.
+      </div>
+    </div>
+
+    <div class="input-area">
+      <textarea id="healthText" class="text-input" rows="3" placeholder="Type your question here... (Enter to send)"></textarea>
+      <button class="submit-btn" onclick="submitHealthIssue()">🚀 Get Answer</button>
+    </div>
+  </main>
+</div>
+
+<script>
+let chatHistory = [
+  { role: "system", content: "You are a versatile general AI assistant created by BRU Companies. Answer any question helpfully and accurately. For code, use Markdown code blocks (```html or ```js etc.). Always thank INEZA AIME BRUNO." }
+];
+
+let typingSpeed = 70; // characters per second
+let typingInterval = null;
+
+document.getElementById('healthText').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    submitHealthIssue();
+  }
+});
+
+async function submitHealthIssue() {
+  const input = document.getElementById('healthText');
+  const text = input.value.trim();
+  const output = document.getElementById('output');
+  
+  if (!text) return;
+
+  appendMessage('user', text);
+  input.value = '';
+  const thinkingDiv = appendMessage('ai', '🔄 Thinking...');
+
+  chatHistory.push({ role: "user", content: text });
+
+  try {
+    const response = await fetch("http://localhost:3000/api/chat", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json" 
+      },
+      body: JSON.stringify({ 
+        model: "llama-3.3-70b-versatile", 
+        messages: chatHistory,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error.message || "API Error");
+    }
+
+    const data = await response.json();
+    const aiMessage = data.choices[0].message.content;
+    
+    chatHistory.push({ role: "assistant", content: aiMessage });
+    thinkingDiv.innerHTML = ''; // Clear "Thinking..."
+    typeMessage(aiMessage, thinkingDiv);
+
+  } catch (err) {
+    thinkingDiv.style.color = "#ef4444";
+    thinkingDiv.innerHTML = "Error: " + err.message + "<br><small>Try again later.</small>";
+  }
+  output.scrollTop = output.scrollHeight;
+}
+
+function appendMessage(role, text) {
+  const output = document.getElementById('output');
+  const msgDiv = document.createElement('div');
+  msgDiv.className = `message-bubble ${role === 'user' ? 'user-msg' : 'ai-msg'}`;
+  msgDiv.innerHTML = text;
+  output.appendChild(msgDiv);
+  output.scrollTop = output.scrollHeight;
+  return msgDiv;
+}
+
+function typeMessage(text, element) {
+  clearTyping();
+  let index = 0;
+  const delay = 1000 / typingSpeed; // ms per character for 70 chars/sec
+
+  typingInterval = setInterval(() => {
+    if (index < text.length) {
+      element.innerHTML += text[index++];
+      element.scrollTop = element.scrollHeight;
+    } else {
+      clearInterval(typingInterval);
+      element.innerHTML = formatContent(text);
+    }
+  }, delay);
+}
+
+function clearTyping() {
+  if (typingInterval) clearInterval(typingInterval);
+}
+
+function formatContent(text) {
+  // Auto-link URLs
+  text = text.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>');
+
+  // Code blocks
+  const codeRegex = /```(\w+)?\s*([\s\S]*?)```/g;
+  text = text.replace(codeRegex, (match, lang, code) => {
+    const langDisplay = lang ? lang.toUpperCase() : 'TEXT';
+    const safeCode = code.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return `
+      <div class="code-container">
+        <div class="code-header">
+          <span>${langDisplay}</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code>${safeCode}</code></pre>
+      </div>`;
+  });
+
+  // Line breaks
+  text = text.replace(/\n/g, "<br>");
+  return text;
+}
+
+function copyCode(btn) {
+  const codeContainer = btn.closest('.code-container');
+  const codeElement = codeContainer.querySelector('pre code');
+  const codeText = codeElement.innerText.trim();
+
+  navigator.clipboard.writeText(codeText).then(() => {
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = "Copy", 2000);
+  }).catch(err => {
+    console.error('Failed to copy:', err);
+    btn.textContent = "Copy Failed";
+    setTimeout(() => btn.textContent = "Copy", 2000);
+  });
+}
+
+function addFeedbackButtons(msgDiv) {
+  if (msgDiv.classList.contains('user-msg')) return;
+
+  const feedback = document.createElement('div');
+  feedback.className = 'feedback';
+  feedback.innerHTML = `
+    <span class="thumb thumb-up" onclick="this.style.opacity='1'">👍</span>
+    <span class="thumb thumb-down" onclick="editMessage(this.parentElement.parentElement)">👎</span>
+  `;
+  msgDiv.appendChild(feedback);
+}
+
+function editMessage(msgDiv) {
+  const originalText = msgDiv.innerHTML;
+  const textarea = document.createElement('textarea');
+  textarea.value = msgDiv.textContent;
+  textarea.style.width = '100%';
+  textarea.style.height = '100px';
+  textarea.style.background = '#0a1628';
+  textarea.style.color = '#e2e8f0';
+  textarea.style.border = '1px solid var(--accent)';
+  textarea.style.borderRadius = '8px';
+  textarea.style.padding = '10px';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Save';
+  saveBtn.style.marginTop = '8px';
+  saveBtn.style.background = 'var(--accent)';
+  saveBtn.style.color = 'white';
+  saveBtn.style.border = 'none';
+  saveBtn.style.padding = '8px 12px';
+  saveBtn.style.borderRadius = '4px';
+  saveBtn.style.cursor = 'pointer';
+
+  saveBtn.onclick = () => {
+    msgDiv.innerHTML = formatContent(textarea.value);
+    addFeedbackButtons(msgDiv);
+  };
+
+  msgDiv.innerHTML = '';
+  msgDiv.appendChild(textarea);
+  msgDiv.appendChild(saveBtn);
+}
+</script>
+</body>
+</html>
